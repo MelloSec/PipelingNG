@@ -1,6 +1,8 @@
 param(
+    [string]$workingFolder,
     [string]$inputFolder,
-    [string]$signatureBinary = "C:\devops\skavencryptiv\WINWORD.exe",
+    [string]$newProjectFolderName,
+    [string]$signatureBinary = "C:\Devops\skavencryptiv\WINWORD.exe",
     [string]$method,
     [string]$outputFolder,
     [switch]$confuser,
@@ -40,11 +42,12 @@ catch {
     Write-Output "base64.exe is not installed."
 }
 
+$path = $workingFolder
 # Check required files
 Write-Output "Checking script dependencies."
-if(!(Test-Path C:\Devops)){ New-Item -ItemType Directory -Path C:\Devops -Force }
-if(!(Test-Path C:\Devops\sigthief.py)){ Invoke-WebRequest https://raw.githubusercontent.com/secretsquirrel/SigThief/master/sigthief.py -o C:\Devops\sigthief.py }
-if(!(Test-Path C:\Devops\cloak.py)){ Invoke-WebRequest https://raw.githubusercontent.com/h4wkst3r/InvisibilityCloak/main/InvisibilityCloak.py -o C:\Devops\cloak.py }
+if(!(Test-Path $path)){ New-Item -ItemType Directory -Path $path -Force }
+if(!(Test-Path $path\sigthief.py)){ Invoke-WebRequest https://raw.githubusercontent.com/secretsquirrel/SigThief/master/sigthief.py -o $path\sigthief.py }
+if(!(Test-Path $path\cloak.py)){ Invoke-WebRequest https://raw.githubusercontent.com/h4wkst3r/InvisibilityCloak/main/InvisibilityCloak.py -o $path\cloak.py }
 
 
 # Python
@@ -74,11 +77,9 @@ if (-not (Test-Path $pythonPath)) {
 }
 Check-FileExists "C:\Python\Python.exe"
 
-
-
 # Check if the Crypter directory exists
 Write-Output "Checking Crypter dependencies."
-$destination = "C:\devops\skavencryptiv"
+$destination = "$path\skavencryptiv"
 if (!(Test-Path $destination\SkavenCryptCI.ps1)) {
     # Clone the repository
     Write-Output "CD script not found, downloading latest version."
@@ -86,20 +87,24 @@ if (!(Test-Path $destination\SkavenCryptCI.ps1)) {
 }
 else{ Write-Output "CD Script found."}
 
-if($xor){ Check-FileExists "C:\Devops\SkavenCryptIV\Xorcrypt.exe  "}
-if($xor){ Check-FileExists "C:\Devops\SkavenCryptIV\Skavencrypt.ps1  "}
-
-
-
+if($xor){ Check-FileExists "$path\SkavenCryptIV\Xorcrypt.exe  "}
+if($xor){ Check-FileExists "$path\SkavenCryptIV\Skavencrypt.ps1  "}
 
 # Ensure "Temp" and "Artifacts" directories exist
 Write-Output "Preparing folders for processing."
-$devopsTempDir = "C:\Devops\Temp"
-$devopsArtifactsDir = "C:\Devops\Artifacts"
-if($devopsTempDir){ Remove-Item -Recurse -Force $devopsTempDir }
+$devopsTempDir = Join-Path $path "Temp"
+$devopsArtifactsDir = Join-Path $path "Artifacts"
+
+# Check and remove the existing Temp directory, then create a new one
+if (Test-Path $devopsTempDir) {
+    Remove-Item -Recurse -Force $devopsTempDir
+}
 New-Item -ItemType Directory -Path $devopsTempDir -Force
 
-if(!($devopsArtifactsDir)){ New-Item -ItemType Directory -Path $devopsArtifactsDir -Force }
+# Check if Artifacts directory exists, if not create a new one
+if (-not (Test-Path $devopsArtifactsDir)) {
+    New-Item -ItemType Directory -Path $devopsArtifactsDir -Force
+}
 
 # Create new build directory inside "Temp"
 $date = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -111,9 +116,22 @@ New-Item -ItemType Directory -Path $newDir -Force
 $artifactsDir = Join-Path $devopsArtifactsDir "artifacts_${date}_${folderName}"
 New-Item -ItemType Directory -Path $artifactsDir -Force
 
-# Copy inputFolder
+# Copy inputFolder to the new build directory
 Copy-Item -Path $inputFolder -Destination $newDir -Recurse -Force
 
+# Assuming $workingFolder is the base directory for operations
+$date = Get-Date -Format "yyyyMMdd_HHmmss"
+$newDir = Join-Path $workingFolder "${date}_${newProjectFolderName}"
+New-Item -ItemType Directory -Path $newDir -Force
+
+# Copy inputFolder to newDir
+Copy-Item -Path $inputFolder -Destination $newDir -Recurse -Force
+
+# The path to the new project directory
+$projectDir = Join-Path $newDir $newProjectFolderName
+
+# Navigate to the project directory
+Push-Location $projectDir
 
 # Process each subfolder
 Write-Output "Running InvisibilityCloak."
@@ -124,27 +142,18 @@ Get-ChildItem -Path $newDir -Directory | ForEach-Object {
 
     # Run cloak.py
     if($method){
-        & "C:\Python\Python.exe" "c:\devops\cloak.py" -d $subFolder -n $cloakName -m $method
+        & "C:\Python\Python.exe" "$path\cloak.py" -d $subFolder -n $cloakName -m $method
     }
     else{
-    & "C:\Python\Python.exe" "c:\devops\cloak.py" -d $subFolder -n $cloakName
+    & "C:\Python\Python.exe" "$path\cloak.py" -d $subFolder -n $cloakName
     }
 
-
-
-    # Find the renamed project directory
-    $renamedProjectDir = Get-ChildItem -Path $subFolder -Directory | Where-Object { $_.Name -eq $cloakName }
-
-    if ($renamedProjectDir) {
-        # Change to the renamed project directory
-        Push-Location $renamedProjectDir.FullName
-
-        Write-Output "Building project."
         # Run dotnet build
+        Write-Output "Building project."
         & dotnet build -c release
 
         # Define build output directory
-        $buildOutputDir = Join-Path $renamedProjectDir.FullName "bin\Release"
+        $buildOutputDir = Join-Path $subFolder "bin\Release"
 
         # Search for the main output file (.dll or .exe)
         $mainOutputFile = Get-ChildItem -Path $buildOutputDir -Recurse -Include *.dll, *.exe -File | Select-Object -First 1
@@ -155,28 +164,30 @@ Get-ChildItem -Path $newDir -Directory | ForEach-Object {
         } else {
             Write-Warning "No main output file found in $buildOutputDir"
         }
+}
 
         # Return to the previous directory
         Pop-Location
-    } else {
-        Write-Warning "Renamed project directory not found in $subFolder"
-    }
-}
+    # } else {
+    #     Write-Warning "Renamed project directory not found in $subFolder"
+    # }
+
 
 # Change directory to the artifacts directory
 Push-Location $artifactsDir
+ls $artifactsDir
 
 # Check if confuser is required
 if ($confuser) {
     # Ensure ConfuserEx CLI is available
-    $confuserPath = "C:\Devops\ConfuserEx-CLI\Confuser.CLI.exe"
+    $confuserPath = "$path\ConfuserEx-CLI\Confuser.CLI.exe"
     if (!(Test-Path $confuserPath)) {
-        Invoke-WebRequest -Uri "https://github.com/mkaring/ConfuserEx/releases/download/v1.6.0/ConfuserEx-CLI.zip" -OutFile "C:\Devops\ConfuserEx-CLI.zip"
-        Expand-Archive -Path "C:\Devops\ConfuserEx-CLI.zip" -DestinationPath "C:\Devops\ConfuserEx-CLI" -Force
+        Invoke-WebRequest -Uri "https://github.com/mkaring/ConfuserEx/releases/download/v1.6.0/ConfuserEx-CLI.zip" -OutFile "$path\ConfuserEx-CLI.zip"
+        Expand-Archive -Path "$path\ConfuserEx-CLI.zip" -DestinationPath "$path\ConfuserEx-CLI" -Force
     }
 
     # Specify the path to your ConfuserEx configuration file
-    $confuserConfigPath = "C:\Devops\SkavenCryptiv\confuser_aggressive.crproj"
+    $confuserConfigPath = "$path\SkavenCryptiv\confuser_aggressive.crproj"
 
     # Run ConfuserEx on each project or file in the artifacts directory
     Get-ChildItem -Path $artifactsDir -Recurse | Where-Object { $_.Extension -match "\.(dll|exe)$" } | ForEach-Object {
@@ -184,7 +195,7 @@ if ($confuser) {
         # This step depends on how ConfuserEx configuration works with individual files or projects
         # Assuming $confuserConfigPath is updated or a new config is created for each file/project
         Write-Output "Running ConfuserEX on artifacts.."
-        & "C:\Devops\ConfuserEx-CLI\Confuser.CLI.exe" -n $confuserConfigPath -o $artifactsDir
+        & "$path\ConfuserEx-CLI\Confuser.CLI.exe" -n $confuserConfigPath -o $artifactsDir
 
 
     }
@@ -199,7 +210,8 @@ Get-ChildItem -Path "." -File | Where-Object { $_.Extension -match "\.(dll|exe)$
 
     # Run sigthief.py
     
-    $sigThiefCmd = & "C:\Python\Python.exe" "C:\devops\sigthief.py" -i $signatureBinary -t $_.FullName -o $outputFileName
+    $signatureBinary = "C:\Devops\skavencryptiv\WINWORD.EXE"
+    $sigThiefCmd = & "C:\Python\Python.exe" "$path\sigthief.py" -i $signatureBinary -t $_.FullName -o $outputFileName
     
     # If sigthief.py runs successfully, delete the original file
     if ($sigThiefCmd -notcontains "error") {
@@ -219,7 +231,8 @@ if ($xor) {
         $encodedEncryptedFile = "$($_.BaseName).enc.txt"
 
         # Encrypt the file
-        & 'C:\Devops\SkavenCryptIV\SkavenCryptCI.ps1' encrypt $originalFile $encryptedFile NewMilleniumCyanideChrist xor
+        if(!($key)){$key = "NewMilleniumCyanideChrist"}
+        & "$path\SkavenCryptIV\SkavenCryptCI.ps1" encrypt $originalFile $encryptedFile $key xor
         Write-Output "Encrypted file: $encryptedFile"
 
         # Check if base64.exe is installed before encoding
