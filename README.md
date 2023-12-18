@@ -8,7 +8,7 @@ Throw more powershell at it!
 
 ![Description of Image](assets/browserblasts1.png)
 
-![Description of Image](assets/browserblats2.png)
+![Description of Image](assets/browserblasts2.png)
 
 ## Usage
 Pretty straight-forward, check out the comments in the block below for explanations of the parameters.
