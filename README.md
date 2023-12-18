@@ -31,3 +31,8 @@ $params = @{
 .\PipelingNG.ps1 @params
 ```
 
+
+Shout outs to the projects used here.
+    - sigthief https://github.com/secretsquirrel/SigThief
+    - invisibilitycloak https://github.com/h4wkst3r/InvisibilityCloak
+    - confuserex https://github.com/mkaring/ConfuserEx
