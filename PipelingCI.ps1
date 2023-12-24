@@ -252,6 +252,10 @@ if ($xor) {
             # Encode the encrypted file
             & base64.exe -e -n 0 -i $encryptedFile -o $encodedEncryptedFile
             Write-Output "Encoded encrypted file: $encodedEncryptedFile"
+            
+            Write-Output "Copying Artifacts Dir to Payloads folder."
+            Get-ChildItem -Path $artifactsDir
+            Copy-Item -Recurse -Force $artifactsDir\* C:\Payloads
         } else {
             Write-Output "Skipping base64 step as base64.exe is not installed."
         }
