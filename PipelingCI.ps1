@@ -267,6 +267,11 @@ else {
     else {
         Write-Output "Skipping base64 step..."
     }
+
+    Get-ChildItem -Path $artifactsDir
+    Copy-Item -Recurse -Force $artifactsDir\* C:\Payloads
+
+
 }
 
 # Return to the previous directory
@@ -274,5 +279,4 @@ Pop-Location
 
 # List contents of the artifacts directory after running sigthief.py
 Write-Host "Contents of the Artifacts Directory after processing:" 
-Get-ChildItem -Path $artifactsDir
-Copy-Item -Recurse -Force $artifactsDir\*
+
