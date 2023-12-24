@@ -31,8 +31,31 @@ $params = @{
 .\PipelingNG.ps1 @params
 ```
 
+### CI and Scripts
 
-Shout outs to the projects used here.
+PipelingCI Modified version I use in my pipeline, can disable sigthief, has some other tweaks.
+Scripts folder has TrimArtifacts and Looper. Looper will take a folder and run the script on any folders inside, useful for a bunch of dotnet projects. TrimArtifacts is useful as a last step in the pipeline to make sure the local artifacts folder doesn't get crazy.
+
+```powershell
+    $params = @{
+        newProjectFolderName = $projName
+        workingFolder = $workingFolder    
+        inputFolder = $proj
+        signatureBinary = $signatureBinary
+        method = $method
+        confuser = $confuser
+        xor = $xor 
+        key = $key
+        sigthief = $false
+    }
+
+    # Run PipelingNG.ps1 script with parameters
+    .\PipelingNG\PipelingCI.ps1 @params
+```
+
+####   Shout outs to the projects used here.
+```
     - sigthief https://github.com/secretsquirrel/SigThief
     - invisibilitycloak https://github.com/h4wkst3r/InvisibilityCloak
     - confuserex https://github.com/mkaring/ConfuserEx
+```
