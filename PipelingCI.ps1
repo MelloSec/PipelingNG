@@ -270,14 +270,17 @@ else {
             & base64.exe -e -n 0 -i $inputFile -o $outputFile
 
             Write-Output "Encoded file: $outputFile"
+            
+            Write-Output "Copying to Payloads folder."
+            Get-ChildItem -Path $artifactsDir
+            Copy-Item -Recurse -Force $artifactsDir\* C:\Payloads
         }
     }
     else {
         Write-Output "Skipping base64 step..."
     }
 
-    Get-ChildItem -Path $artifactsDir
-    Copy-Item -Recurse -Force $artifactsDir\* C:\Payloads
+    
 
 
 }
