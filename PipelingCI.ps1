@@ -7,6 +7,7 @@ param(
     [string]$outputFolder,
     [switch]$confuser,
     [switch]$xor,
+    [switch]$sigthief,
     [string]$key
 )
 
@@ -201,22 +202,29 @@ if ($confuser) {
     }
 }
 
+if ($sigthief) {
+    Write-Output "Running Sigthief."
+    # Run sigthief.py on each .dll and .exe file in the directory
+    Get-ChildItem -Path "." -File | Where-Object { $_.Extension -match "\.(dll|exe)$" } | ForEach-Object {
+        # Derive the output file name by removing "_cloak"
+        $outputFileName = $_.Name -replace "_cloak", ""
 
-Write-Output "Running Sigthief."
-# Run sigthief.py on each .dll and .exe file in the directory
-Get-ChildItem -Path "." -File | Where-Object { $_.Extension -match "\.(dll|exe)$" } | ForEach-Object {
-    # Derive the output file name by removing "_cloak"
-    $outputFileName = $_.Name -replace "_cloak", ""
-
-    # Run sigthief.py
-    
-    $signatureBinary = "C:\Devops\skavencryptiv\WINWORD.EXE"
-    $sigThiefCmd = & "C:\Python\Python.exe" "$path\sigthief.py" -i $signatureBinary -t $_.FullName -o $outputFileName
-    
-    # If sigthief.py runs successfully, delete the original file
-    if ($sigThiefCmd -notcontains "error") {
-        Write-Output "No sigthief errors. Deleting old file."
-        Remove-Item $_.FullName -Force
+        # Run sigthief.py
+        $signatureBinary = "C:\Devops\skavencryptiv\WINWORD.EXE"
+        $sigThiefCmd = & "C:\Python\Python.exe" "$path\sigthief.py" -i $signatureBinary -t $_.FullName -o $outputFileName
+        
+        # If sigthief.py runs successfully, delete the original file
+        if ($sigThiefCmd -notcontains "error") {
+            Write-Output "No sigthief errors. Deleting old file."
+            Remove-Item $_.FullName -Force
+        }
+    }
+} else {
+    Write-Output "Sigthief is not enabled. Renaming files."
+    # Rename files by removing "_cloak"
+    Get-ChildItem -Path "." -File | Where-Object { $_.Extension -match "\.(dll|exe)$" } | ForEach-Object {
+        $outputFileName = $_.Name -replace "_cloak", ""
+        Rename-Item -Path $_.FullName -NewName $outputFileName
     }
 }
 
