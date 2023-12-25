@@ -141,30 +141,36 @@ Get-ChildItem -Path $newDir -Directory | ForEach-Object {
     $folderName = $_.Name
     $cloakName = "${folderName}_cloak"
 
+    # Remove bin/Release folders
+    $binReleasePath = Join-Path $subFolder "bin\Release"
+    if (Test-Path $binReleasePath) {
+        Write-Output "Clearing bin/Release folder in $folderName"
+        Remove-Item -Path $binReleasePath -Recurse -Force
+    }
+
     # Run cloak.py
-    if($method){
+    if ($method) {
         & "C:\Python\Python.exe" "$path\cloak.py" -d $subFolder -n $cloakName -m $method
+    } else {
+        & "C:\Python\Python.exe" "$path\cloak.py" -d $subFolder -n $cloakName
     }
-    else{
-    & "C:\Python\Python.exe" "$path\cloak.py" -d $subFolder -n $cloakName
+
+    # Run dotnet build
+    Write-Output "Building project."
+    & dotnet build -c release
+
+    # Define build output directory
+    $buildOutputDir = Join-Path $subFolder "bin\Release"
+
+    # Search for the main output file (.dll or .exe)
+    $mainOutputFile = Get-ChildItem -Path $buildOutputDir -Recurse -Include *.dll, *.exe -File | Select-Object -First 1
+
+    if ($mainOutputFile) {
+        # Copy the main output file to the artifacts directory
+        Copy-Item -Path $mainOutputFile.FullName -Destination $artifactsDir
+    } else {
+        Write-Warning "No main output file found in $buildOutputDir"
     }
-
-        # Run dotnet build
-        Write-Output "Building project."
-        & dotnet build -c release
-
-        # Define build output directory
-        $buildOutputDir = Join-Path $subFolder "bin\Release"
-
-        # Search for the main output file (.dll or .exe)
-        $mainOutputFile = Get-ChildItem -Path $buildOutputDir -Recurse -Include *.dll, *.exe -File | Select-Object -First 1
-
-        if ($mainOutputFile) {
-            # Copy the main output file to the artifacts directory
-            Copy-Item -Path $mainOutputFile.FullName -Destination $artifactsDir
-        } else {
-            Write-Warning "No main output file found in $buildOutputDir"
-        }
 }
 
         # Return to the previous directory
