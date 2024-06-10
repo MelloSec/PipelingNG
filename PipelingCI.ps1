@@ -43,7 +43,8 @@ catch {
     Write-Output "base64.exe is not installed."
 }
 
-$path = $workingFolder
+# $path = $workingFolder
+$path = ".\"
 # Check required files
 Write-Output "Checking script dependencies."
 if(!(Test-Path $path)){ New-Item -ItemType Directory -Path $path -Force }
@@ -194,7 +195,7 @@ if ($confuser) {
     }
 
     # Specify the path to your ConfuserEx configuration file
-    $confuserConfigPath = "$path\SkavenCryptiv\confuser_aggressive.crproj"
+    $confuserConfigPath = "$path\SkavenCryptiv\confuser_minimum.crproj"
 
     # Run ConfuserEx on each project or file in the artifacts directory
     Get-ChildItem -Path $artifactsDir -Recurse | Where-Object { $_.Extension -match "\.(dll|exe)$" } | ForEach-Object {
